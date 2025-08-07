@@ -29,23 +29,34 @@ class TreeSceneNode(Node):
         self.declare_parameter("num_side_branches", 4.0)
         self.declare_parameter("side_branch_radii", 0.04)
         self.declare_parameter("side_branch_len", 2.0)
+        self.declare_parameter("tree_frame_id", "camera_link")
         self.leader_branch_radii = self.get_parameter("leader_branch_radii").get_parameter_value().double_value
         self.leader_branch_len = self.get_parameter("leader_branch_len").get_parameter_value().double_value
         self.num_side_branches = self.get_parameter("num_side_branches").get_parameter_value().double_value
         self.side_branch_radii = self.get_parameter("side_branch_radii").get_parameter_value().double_value
         self.side_branch_len = self.get_parameter("side_branch_len").get_parameter_value().double_value
+        self.tree_frame_id = self.get_parameter("tree_frame_id").get_parameter_value().string_value
 
         self.trellis_position = [0.0, 2.0, 0.0]
-        self.trellis_angle = np.deg2rad(-18.435) # Angle provided by Martin (WSU) 9/11/2024
+        self.trellis_yaw = 0.0
+
+        if self.tree_frame_id == "camera_link":
+            self.trellis_angle = np.deg2rad(-108.435) # Angle -90 by Pascal Awesome because axis correction
+        else:
+            self.trellis_angle = np.deg2rad(-18.435) # Angle provided by Martin (WSU) 9/11/2024
+
+        #self.trellis_angle = np.deg2rad(-18.435) # Angle provided by Martin (WSU) 9/11/2024
+        # IF CAMERA LINK ,, TESTING -90 deg
+        #self.trellis_angle = np.deg2rad(-108.435)
+
         self.branch_spacing = self.leader_branch_len / self.num_side_branches
 
         self.get_logger().info(f'Trellis template node running')
         
     def update_trellis_position_callback(self, request, response):
         # Update the position
-        self.trellis_position[0] = request.x
-        self.trellis_position[1] = request.y
-        self.trellis_position[2] = request.z
+        self.trellis_position = [request.x, request.y, request.z]
+        self.trellis_yaw = request.yaw
 
         # Re-add the tree to the planning scene with the new position
         self.add_tree_to_scene()
@@ -60,7 +71,7 @@ class TreeSceneNode(Node):
         tree_object = CollisionObject()
         tree_object.id = 'v_trellis_tree'  # Unique identifier
         tree_object.header = Header()
-        tree_object.header.frame_id = 'world'  # Root frame
+        tree_object.header.frame_id = self.tree_frame_id # Root frame
 
         # Define the leader branch (cylinder)
         leader_branch = SolidPrimitive()
@@ -98,16 +109,29 @@ class TreeSceneNode(Node):
             tree_object.primitives.append(side_branch)
             tree_object.primitive_poses.append(branch_pose)
 
-        # Set the pose of the tree object using the updated position
+        # set pose of the tree object using the updated position
         tree_object.pose.position.x = self.trellis_position[0]
         tree_object.pose.position.y = self.trellis_position[1]
         tree_object.pose.position.z = self.trellis_position[2]
 
-        canopy_orientation = R.from_euler('xyz', [0, self.trellis_angle, np.pi/2]).as_quat()
-        tree_object.pose.orientation.x = canopy_orientation[0]
-        tree_object.pose.orientation.y = canopy_orientation[1]
-        tree_object.pose.orientation.z = canopy_orientation[2]
-        tree_object.pose.orientation.w = canopy_orientation[3]
+        #canopy_orientation = R.from_euler('xyz', [0, self.trellis_angle, np.pi/2]).as_quat()
+        #tree_object.pose.orientation.x = canopy_orientation[0]
+        #tree_object.pose.orientation.y = canopy_orientation[1]
+        #tree_object.pose.orientation.z = canopy_orientation[2]
+        #tree_object.pose.orientation.w = canopy_orientation[3]
+
+        yaw_rot   = R.from_euler('y', self.trellis_yaw)
+
+        # then apply the original tilt+90:
+        tilt_rot  = R.from_euler('xyz', [0, self.trellis_angle, np.pi/2])
+
+        # combine them (R.apply = second then first):
+        full_rot  = (yaw_rot * tilt_rot).as_quat()
+
+        tree_object.pose.orientation.x = full_rot[0]
+        tree_object.pose.orientation.y = full_rot[1]
+        tree_object.pose.orientation.z = full_rot[2]
+        tree_object.pose.orientation.w = full_rot[3]
 
         # Set the operation to ADD
         tree_object.operation = CollisionObject.ADD

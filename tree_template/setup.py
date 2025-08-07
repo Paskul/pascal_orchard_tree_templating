@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'tree_template = tree_template.generate_trellis_collision_obj:main',
+            'tree_template_from_ros2 = tree_template.generate_trellis_collision_obj_from_msg:main',
         ],
     },
 )

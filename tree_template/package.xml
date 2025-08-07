@@ -12,6 +12,9 @@
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
+  <depend>moveit_msgs</depend>
+  <depend>moveit_core</depend>
+
   <exec_depend>tree_template_interfaces</exec_depend>
 
   <export>
