@@ -9,11 +9,20 @@ from geometry_msgs.msg import PointStamped
 from pf_orchard_interfaces.msg import TreeImageData
 from tree_template_interfaces.srv import UpdateTrellisPosition
 import tf2_ros
-import tf2_geometry_msgs  # registers PointStamped with tf2
 
 class TreeDataListener(Node):
     def __init__(self):
         super().__init__('tree_data_listener')
+
+        self.declare_parameter('camera_delta_topic', '/camera_vertical_delta')
+        self.declare_parameter('tree_data_topic', '/tree_image_data')
+        self.declare_parameter('clicked_point_topic', '/clicked_point')
+        self.declare_parameter('tilt_angle_deg', 18.435)
+
+        self.cam_topic    = self.get_parameter('camera_delta_topic').value
+        self.tree_topic   = self.get_parameter('tree_data_topic').value
+        self.click_topic  = self.get_parameter('clicked_point_topic').value
+        self.tilt_deg     = self.get_parameter('tilt_angle_deg').value
 
         # Service client 
         self.cli = self.create_client(UpdateTrellisPosition, 'update_trellis_position')
@@ -21,7 +30,7 @@ class TreeDataListener(Node):
             self.get_logger().info('Waiting for update_trellis_position service…')
 
         # State for X/Y/Z anchoring 
-        self.tilt_angle   = math.radians(18.435)  # trellis tilt in the camera Y–Z plane
+        self.tilt_angle   = math.radians(self.tilt_deg)
         self.current_y    = 0.0
         self.anchor_y     = None
         self._last_xyz    = (0.0, 0.0, 0.0)
@@ -38,19 +47,22 @@ class TreeDataListener(Node):
         #  Subscriptions 
         self.create_subscription(
             Float32,
-            '/camera_vertical_delta',
+            #'/camera_vertical_delta',
+            self.cam_topic,
             self.on_vertical_delta,
             10
         )
         self.create_subscription(
             TreeImageData,
-            '/tree_image_data',
+            #'/tree_image_data',
+            self.tree_topic,
             self.on_tree_data,
             10
         )
         self.create_subscription(
             PointStamped,
-            '/clicked_point',
+            #'/clicked_point',
+            self.click_topic,
             self.on_click,
             1
         )

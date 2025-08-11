@@ -13,6 +13,30 @@ from tree_template_interfaces.srv import UpdateTrellisPosition
 class TreeSceneNode(Node):
     def __init__(self):
         super().__init__('tree_scene_node')
+
+        self.declare_parameter("collision_topic",       "collision_object")
+        self.declare_parameter("leader_branch_radii",   0.08)
+        self.declare_parameter("leader_branch_len",     2.0)
+        self.declare_parameter("num_side_branches",     4)
+        self.declare_parameter("side_branch_radii",     0.04)
+        self.declare_parameter("side_branch_len",       2.0)
+        self.declare_parameter("tree_frame_id",         "camera_link")
+        self.declare_parameter("tilt_angle_def_deg",    18.435)
+        self.declare_parameter("initial_position",      [0.0, 2.0, 0.0])
+        self.declare_parameter("initial_yaw",           0.0)
+
+        self.coll_topic            = self.get_parameter("collision_topic").value
+        self.leader_branch_radii   = float(self.get_parameter("leader_branch_radii").value)
+        self.leader_branch_len     = float(self.get_parameter("leader_branch_len").value)
+        self.num_side_branches     = int(self.get_parameter("num_side_branches").value)
+        self.side_branch_radii     = float(self.get_parameter("side_branch_radii").value)
+        self.side_branch_len       = float(self.get_parameter("side_branch_len").value)
+        self.tree_frame_id         = self.get_parameter("tree_frame_id").value
+        self.def_deg               = float(self.get_parameter("tilt_angle_def_deg").value)
+        pos                        = self.get_parameter("initial_position").value
+        self.trellis_position      = list(pos)
+        self.trellis_yaw           = float(self.get_parameter("initial_yaw").value)
+
         # Create the service
         self.update_position_service = self.create_service(
             UpdateTrellisPosition,
@@ -21,33 +45,14 @@ class TreeSceneNode(Node):
         )
 
         # Publisher for collision objects
-        self.collision_object_publisher = self.create_publisher(CollisionObject, 'collision_object', 10)
-
-        # Parameters 
-        self.declare_parameter("leader_branch_radii", 0.08)
-        self.declare_parameter("leader_branch_len", 2.0)
-        self.declare_parameter("num_side_branches", 4.0)
-        self.declare_parameter("side_branch_radii", 0.04)
-        self.declare_parameter("side_branch_len", 2.0)
-        self.declare_parameter("tree_frame_id", "camera_link")
-        self.leader_branch_radii = self.get_parameter("leader_branch_radii").get_parameter_value().double_value
-        self.leader_branch_len = self.get_parameter("leader_branch_len").get_parameter_value().double_value
-        self.num_side_branches = self.get_parameter("num_side_branches").get_parameter_value().double_value
-        self.side_branch_radii = self.get_parameter("side_branch_radii").get_parameter_value().double_value
-        self.side_branch_len = self.get_parameter("side_branch_len").get_parameter_value().double_value
-        self.tree_frame_id = self.get_parameter("tree_frame_id").get_parameter_value().string_value
-
-        self.trellis_position = [0.0, 2.0, 0.0]
-        self.trellis_yaw = 0.0
+        self.collision_object_publisher = self.create_publisher(CollisionObject, self.coll_topic, 10)
 
         if self.tree_frame_id == "camera_link":
-            self.trellis_angle = np.deg2rad(-108.435) # Angle -90 by Pascal Awesome because axis correction
+            self.trellis_angle = np.deg2rad(-self.def_deg - 90.0) # Angle -90 by Pascal Awesome because axis correction
         else:
-            self.trellis_angle = np.deg2rad(-18.435) # Angle provided by Martin (WSU) 9/11/2024
-
-        #self.trellis_angle = np.deg2rad(-18.435) # Angle provided by Martin (WSU) 9/11/2024
-        # IF CAMERA LINK ,, TESTING -90 deg
-        #self.trellis_angle = np.deg2rad(-108.435)
+            self.trellis_angle = np.deg2rad(-self.def_deg) # Angle provided by Martin (WSU) 9/11/2024
+        # or really should be any link with 90 deg axis rotation, but going to keep it easy for now and hardcode camera_link...
+        # likely easily fixed with a new param
 
         self.branch_spacing = self.leader_branch_len / self.num_side_branches
 
@@ -114,20 +119,12 @@ class TreeSceneNode(Node):
         tree_object.pose.position.y = self.trellis_position[1]
         tree_object.pose.position.z = self.trellis_position[2]
 
-        #canopy_orientation = R.from_euler('xyz', [0, self.trellis_angle, np.pi/2]).as_quat()
-        #tree_object.pose.orientation.x = canopy_orientation[0]
-        #tree_object.pose.orientation.y = canopy_orientation[1]
-        #tree_object.pose.orientation.z = canopy_orientation[2]
-        #tree_object.pose.orientation.w = canopy_orientation[3]
 
         yaw_rot   = R.from_euler('y', self.trellis_yaw)
-
         # then apply the original tilt+90:
         tilt_rot  = R.from_euler('xyz', [0, self.trellis_angle, np.pi/2])
-
         # combine them (R.apply = second then first):
         full_rot  = (yaw_rot * tilt_rot).as_quat()
-
         tree_object.pose.orientation.x = full_rot[0]
         tree_object.pose.orientation.y = full_rot[1]
         tree_object.pose.orientation.z = full_rot[2]

@@ -1,0 +1,29 @@
+tree_template_base:
+  ros__parameters:
+    #moveit_msgs/msg/CollisionObject -- for moveit collision planning
+    collision_topic:      collision_object
+
+    leader_branch_radii:  0.08
+    leader_branch_len:    2.0
+    num_side_branches:    4
+    side_branch_radii:    0.04
+    side_branch_len:      2.0
+
+    # which frame to publish tree object into, camera is used for consistent coords
+    tree_frame_id:        camera_link
+    tilt_angle_def_deg:   18.435
+    initial_position:     [0.0, 2.0, 0.0]
+    initial_yaw:          0.0
+
+tree_template_from_ros2:
+  ros__parameters:
+    # std_msgs/msg/Float32 -- from visual z estimate node
+    camera_delta_topic:   /camera_vertical_delta
+
+    # pf_orchard_interfaces/msg/TreeImageData -- from orchard_interfaces node (SeeTree)
+    tree_data_topic:      /tree_image_data
+
+    # geometry_msgs/msg/PointStamped -- user clicked pointcloud, used to estimate yaw of template manually **buggy**
+    clicked_point_topic:  /clicked_point
+
+    tilt_angle_deg:       18.435
