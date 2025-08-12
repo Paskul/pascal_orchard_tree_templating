@@ -7,6 +7,8 @@ Pascal's REU edits to the Tree templating repo. A list of changes includes:
 3. `generate_trellis_collision_obj_from_msg.py` now supports keeping an 'anchor' of our visual-delta estimate, tracking the lowest point, and 'pinning' the base to be calculated as sticking to that minimum. This is useful in the case of observing the base of the trunk with no prior knowledge, supporting movement back upwards with a reference to a true-tracked base. If then moving upwards from the base, horizontally planar points (x,z) are recalculated as being 'projected backwards' due to the degree of trellis (set as 18 deg), accumulating difference in true (x,z) as this difference from 'anchor to true' grows. For example, the package pascal_odom publishes this delta vertical topic to be used.
 4. `generate_trellis_collision_obj.py` supports config parameters and pulls from `generate_trellis_collision_obj_from_msg.py`. There is now further support for publishing tree templates in custom frames, currently set as `camera_link` in the config. I started a sketch of calculations to try and support differences in frames as best as possible (at least between `camera_link` and `base_link`).
 
+### Launch
+
 Launching with `tree_template.launch.py` launches both tree templating nodes: `generate_trellis_collision_obj.py` and `generate_trellis_collision_obj_from_msg.py`. In order for templating to work correctly, a visual estimate of up/down movement is needed, leading to reliance on an external package. Knowing this, in our launch, we look for `pascal_odom` and launch its visual estimate node as part of this pipeline. Parameters set for each node are found in their respective packages `config` folder.
 
 ### Todo
