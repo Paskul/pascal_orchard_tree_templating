@@ -47,7 +47,7 @@ source ~/ros2_ws/install/setup.bash
 ros2 launch tree_template tree_template.launch.py 
 ```
 
-Launching with `tree_template.launch.py` launches both tree templating nodes: `generate_trellis_collision_obj.py` and `generate_trellis_collision_obj_from_msg.py`. In order for templating to work correctly, a visual estimate of up/down movement is needed, leading to reliance on an external package, `pascal_odom`. Knowing this, in our launch, we look for `pascal_odom` and launch its visual estimate node as part of this pipeline. `pascal_odom` is installed through repository **INSERT HERE**. Parameters set for each node are found in their respective packages `config` folder.
+Launching with `tree_template.launch.py` launches both tree templating nodes: `generate_trellis_collision_obj.py` and `generate_trellis_collision_obj_from_msg.py`. In order for templating to work correctly, a visual estimate of up/down movement is needed, leading to reliance on an external package, `pascal_odom`. Knowing this, in our launch, we look for `pascal_odom` and launch its visual estimate node as part of this pipeline. `pascal_odom` is installed through the repository [seeTreeVisualFlowTracking](https://github.com/Paskul/seeTreeVisualFlowTracking). We rely on horizontal (x,y) published the same way, found through repository [trunk_width_estimation](https://github.com/Jostan86/trunk_width_estimation). Parameters set for each node are found in their respective packages `config` folder.
 
 
 ### Parameters for `tree_template_base`
